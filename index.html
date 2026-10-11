@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Kriz Odası Simülasyonu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #12161d;
+    --panel: #1a2029;
+    --panel-2: #212936;
+    --hairline: #2c3542;
+    --amber: #e8a33d;
+    --amber-dim: #7a5b28;
+    --mert: #7fa0b8;
+    --mert-dim: #35424d;
+    --selin: #de6a52;
+    --selin-dim: #4a3128;
+    --text: #eceef1;
+    --text-muted: #909aa8;
+    --text-faint: #5c6674;
+    --good: #7bbf8f;
+
+    --cat-character: #5677ad;
+    --cat-character-dim: #2a3a52;
+    --cat-substance: #c1663f;
+    --cat-substance-dim: #4a3226;
+    --cat-style: #86974f;
+    --cat-style-dim: #38401f;
+
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  *{box-sizing:border-box;}
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      /* This experience is intentionally a dark "war room" regardless of system theme */
+    }
+  }
+  html{ scroll-padding-top: env(safe-area-inset-top, 0px); height:100%; }
+  body{
+    margin:0;
+    min-height:100%;
+    background: var(--bg);
+    color: var(--text);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+
+  .app{
+    width:100%;
+    max-width: 720px;
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    background: var(--bg);
+    position:relative;
+  }
+
+  /* ---------- Header ---------- */
+  header{
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 5;
+    background: linear-gradient(180deg, var(--bg) 80%, transparent);
+    padding: 18px 20px 10px;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .eyebrow-row{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:12px;
+  }
+  .status-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:.04em;
+    color: var(--amber);
+    background: rgba(232,163,61,0.1);
+    border:1px solid var(--amber-dim);
+    padding:3px 8px;
+    border-radius:3px;
+    white-space:nowrap;
+  }
+  .timer{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    color: var(--text-muted);
+  }
+  .timer strong{ color: var(--amber); font-weight:600; }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size: clamp(22px, 5.5vw, 28px);
+    line-height:1.15;
+    margin: 8px 0 4px;
+    letter-spacing: -0.01em;
+  }
+  .subline{
+    color: var(--text-muted);
+    font-size: 13.5px;
+    line-height:1.5;
+    margin: 0 0 12px;
+    max-width: 58ch;
+  }
+
+  /* ---------- Briefing / start screen ---------- */
+  .briefing{
+    padding: 8px 20px 28px;
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    gap: 18px;
+  }
+  .brief-card{
+    background: var(--panel);
+    border:1px solid var(--hairline);
+    border-radius: 6px;
+    padding: 18px 18px 20px;
+  }
+  .brief-card p{
+    margin: 0 0 10px;
+    font-size: 14.5px;
+    line-height: 1.65;
+    color: #d3d7dd;
+  }
+  .brief-card p:last-child{ margin-bottom:0; }
+  .cast{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-top: 4px;
+  }
+  .cast-row{
+    display:flex;
+    gap:10px;
+    align-items:flex-start;
+    padding: 10px 12px;
+    border-radius: 5px;
+    background: var(--panel-2);
+    border-left: 3px solid var(--hairline);
+  }
+  .cast-row.mert{ border-left-color: var(--mert); }
+  .cast-row.selin{ border-left-color: var(--selin); }
+  .cast-row .name{
+    font-weight:600;
+    font-size: 13.5px;
+    white-space:nowrap;
+  }
+  .cast-row.mert .name{ color: var(--mert); }
+  .cast-row.selin .name{ color: var(--selin); }
+  .cast-row .desc{ font-size: 13px; color: var(--text-muted); line-height:1.5; }
+
+  .select-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing:.04em;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+    display:block;
+  }
+  .role-select{
+    width:100%;
+    appearance:none;
+    background: var(--panel-2);
+    border: 1px solid var(--hairline);
+    color: var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size: 14.5px;
+    font-weight:500;
+    padding: 13px 40px 13px 14px;
+    border-radius: 6px;
+    cursor:pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23909aa8' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+  }
+  .role-select:focus{ outline:none; border-color:#4a5566; }
+
+  .stake-line{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    line-height:1.6;
+    color: var(--amber);
+    background: rgba(232,163,61,0.08);
+    border: 1px solid var(--amber-dim);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin: 12px 0 0;
+  }
+  .role-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    display:block;
+    margin-top: 2px;
+  }
+  .back-link{
+    background:none;
+    border:none;
+    color: var(--text-faint);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size: 12.5px;
+    cursor:pointer;
+    align-self:center;
+    padding: 4px;
+  }
+  .back-link:hover{ color: var(--text-muted); }
+
+  .start-btn{
+    appearance:none;
+    border:none;
+    cursor:pointer;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-weight:600;
+    font-size: 15px;
+    padding: 14px 20px;
+    border-radius: 5px;
+    background: var(--amber);
+    color: #1a1204;
+    letter-spacing: .01em;
+    transition: transform .12s ease, background .12s ease;
+  }
+  .start-btn:hover{ background:#f0b154; }
+  .start-btn:active{ transform: scale(0.98); }
+  .start-btn:disabled{ opacity:.5; cursor:default; }
+
+  /* ---------- Chat area ---------- */
+  .chat{
+    flex:1;
+    padding: 16px 16px 12px;
+    display:flex;
+    flex-direction:column;
+    gap: 14px;
+    overflow-y:auto;
+  }
+
+  .msg{
+    max-width: 86%;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .msg.mert, .msg.selin{ align-self:flex-start; }
+  .msg.user{ align-self:flex-end; max-width: 80%; }
+  .msg.system{ align-self:center; max-width:100%; }
+
+  .msg .label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing:.03em;
+    padding-left: 2px;
+  }
+  .msg.mert .label{ color: var(--mert); }
+  .msg.selin .label{ color: var(--selin); }
+
+  .bubble{
+    padding: 11px 14px;
+    border-radius: 8px;
+    font-size: 14.5px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+  .msg.mert .bubble{
+    background: var(--mert-dim);
+    border: 1px solid #3f5361;
+    border-top-left-radius: 2px;
+    color: #e4ecf1;
+  }
+  .msg.selin .bubble{
+    background: var(--selin-dim);
+    border: 1px solid #61402f;
+    border-top-left-radius: 2px;
+    color: #f4e6e0;
+  }
+  .msg.user .bubble{
+    background: var(--panel-2);
+    border: 1px solid var(--hairline);
+    border-top-right-radius: 2px;
+    color: var(--text);
+  }
+  .msg.system .bubble{
+    background: transparent;
+    border: none;
+    color: var(--text-faint);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11.5px;
+    text-align:center;
+    padding: 4px 0;
+  }
+
+  .thinking{
+    align-self:flex-start;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    color: var(--text-faint);
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 12px;
+    padding: 4px 4px;
+  }
+  .dot{
+    width:5px; height:5px; border-radius:50%;
+    background: var(--text-faint);
+    animation: pulse 1.1s infinite ease-in-out;
+  }
+  .dot:nth-child(2){ animation-delay:.15s; }
+  .dot:nth-child(3){ animation-delay:.3s; }
+  @keyframes pulse{
+    0%,80%,100%{ opacity:.25; transform: scale(0.8); }
+    40%{ opacity:1; transform: scale(1); }
+  }
+
+  /* ---------- Composer ---------- */
+  .composer{
+    position: sticky;
+    bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--bg);
+    border-top: 1px solid var(--hairline);
+    padding: 12px 16px calc(14px + env(safe-area-inset-bottom, 0px));
+    display:flex;
+    gap: 10px;
+    align-items:flex-end;
+  }
+  .composer textarea{
+    flex:1;
+    resize:none;
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    color: var(--text);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size: 14.5px;
+    padding: 11px 13px;
+    line-height:1.4;
+    max-height: 120px;
+    min-height: 44px;
+  }
+  .composer textarea:focus{ outline: none; border-color:#4a5566; }
+  .composer button{
+    appearance:none;
+    border:none;
+    cursor:pointer;
+    background: var(--amber);
+    color: #1a1204;
+    font-weight:600;
+    font-size: 14px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    white-space:nowrap;
+    transition: background .12s ease, opacity .12s ease;
+  }
+  .composer button:hover{ background:#f0b154; }
+  .composer button:disabled{ opacity:.4; cursor:default; }
+  .turn-hint{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    color: var(--text-faint);
+    text-align:center;
+    padding: 6px 0 0;
+  }
+
+  .login-btn{
+    display:inline-block;
+    margin-top:10px;
+    background: var(--amber);
+    color:#1a1204;
+    font-weight:600;
+    font-size:13.5px;
+    padding:9px 16px;
+    border-radius:6px;
+    text-decoration:none;
+  }
+  .login-btn:hover{ background:#f0b154; }
+  .banner-actions{ display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+  .banner-secondary{
+    margin-top:10px;
+    background:none;
+    border:1px solid var(--selin-dim);
+    color:#f0a894;
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size:13px;
+    padding:8px 14px;
+    border-radius:6px;
+    cursor:pointer;
+  }
+
+  .diag-box{
+    margin-top:10px;
+    padding:8px 10px;
+    background: rgba(0,0,0,0.25);
+    border:1px solid var(--selin-dim);
+    border-radius:5px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    line-height:1.55;
+    color:#d9b3a7;
+    white-space:pre-wrap;
+    word-break:break-all;
+    user-select:text;
+    -webkit-user-select:text;
+  }
+  .error-banner{
+    margin: 0 16px 10px;
+    padding: 10px 12px;
+    background: rgba(222,106,82,0.1);
+    border: 1px solid var(--selin-dim);
+    color: #f0a894;
+    font-size: 13px;
+    border-radius: 6px;
+  }
+
+  /* ---------- Evaluation panel ---------- */
+  .eval-wrap{
+    padding: 20px 18px 28px;
+    display:flex;
+    flex-direction:column;
+    gap: 18px;
+  }
+  .eval-head{
+    text-align:center;
+    padding: 4px 0 6px;
+  }
+  .eval-head .kicker{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing:.06em;
+    color: var(--amber);
+  }
+  .eval-head h2{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size: 24px;
+    margin: 6px 0 0;
+  }
+
+  .score-groups{
+    display:flex;
+    flex-direction:column;
+    gap: 14px;
+  }
+  .score-group{
+    background: var(--panel);
+    border:1px solid var(--hairline);
+    border-radius: 8px;
+    overflow:hidden;
+  }
+  .score-group-head{
+    padding: 10px 16px;
+    display:flex;
+    align-items:baseline;
+    gap:8px;
+  }
+  .score-group-head .cat-title{
+    font-weight:600;
+    font-size: 13.5px;
+    color: #fff;
+  }
+  .score-group-head .cat-sub{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: rgba(255,255,255,0.75);
+  }
+  .score-group.character .score-group-head{ background: var(--cat-character); }
+  .score-group.substance .score-group-head{ background: var(--cat-substance); }
+  .score-group.style .score-group-head{ background: var(--cat-style); }
+
+  .score-list{
+    display:flex;
+    flex-direction:column;
+    gap: 12px;
+    padding: 16px;
+  }
+  .score-row{ display:flex; flex-direction:column; gap:6px; }
+  .score-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+    font-size: 13px;
+  }
+  .score-name{ color:#dfe3e8; font-weight:500; }
+  .score-en{ color: var(--text-faint); font-weight:400; font-size:11.5px; }
+  .score-val{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; }
+  .score-track{
+    height:6px;
+    background: var(--panel-2);
+    border-radius:3px;
+    overflow:hidden;
+  }
+  .score-fill{
+    height:100%;
+    border-radius:3px;
+    width:0%;
+    transition: width .9s cubic-bezier(.2,.8,.2,1);
+  }
+  .score-group.character .score-val{ color: var(--cat-character); }
+  .score-group.character .score-fill{ background: linear-gradient(90deg, var(--cat-character-dim), var(--cat-character)); }
+  .score-group.substance .score-val{ color: var(--cat-substance); }
+  .score-group.substance .score-fill{ background: linear-gradient(90deg, var(--cat-substance-dim), var(--cat-substance)); }
+  .score-group.style .score-val{ color: var(--cat-style); }
+  .score-group.style .score-fill{ background: linear-gradient(90deg, var(--cat-style-dim), var(--cat-style)); }
+
+  .persp-grid{
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+  }
+  .persp-card{
+    background: var(--panel);
+    border:1px solid var(--hairline);
+    border-left: 3px solid var(--hairline);
+    border-radius: 6px;
+    padding: 14px 15px;
+  }
+  .persp-card.mert{ border-left-color: var(--mert); }
+  .persp-card.selin{ border-left-color: var(--selin); }
+  .persp-card.strength{ border-left-color: var(--good); }
+  .persp-card.growth{ border-left-color: var(--amber); }
+  .persp-card .persp-title{
+    font-family:'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing:.03em;
+    margin-bottom: 6px;
+  }
+  .persp-card.mert .persp-title{ color: var(--mert); }
+  .persp-card.selin .persp-title{ color: var(--selin); }
+  .persp-card.strength .persp-title{ color: var(--good); }
+  .persp-card.growth .persp-title{ color: var(--amber); }
+  .persp-card p{
+    margin:0;
+    font-size: 13.5px;
+    line-height:1.6;
+    color: #d3d7dd;
+  }
+
+  .raw-fallback{
+    white-space:pre-wrap;
+    font-size: 13.5px;
+    line-height:1.6;
+    color: #d3d7dd;
+    background: var(--panel);
+    border:1px solid var(--hairline);
+    border-radius: 8px;
+    padding: 16px;
+  }
+
+  .restart-btn{
+    align-self:center;
+    margin-top: 4px;
+    appearance:none;
+    background:transparent;
+    border: 1px solid var(--hairline);
+    color: var(--text-muted);
+    font-family:'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor:pointer;
+  }
+  .restart-btn:hover{ border-color:#4a5566; color: var(--text); }
+
+  ::-webkit-scrollbar{ width:8px; }
+  ::-webkit-scrollbar-thumb{ background: var(--panel-2); border-radius:4px; }
+</style>
+</head>
+<body>
+<div class="app" id="app">
+
+  <header>
+    <div class="eyebrow-row">
+      <span class="status-tag" id="statusTag">DURUM: KRİZ</span>
+      <span class="timer" id="timerDisplay">Üst yönetime kalan süre: <strong>30:00</strong></span>
+    </div>
+    <h1>Acil Aksiyon Toplantısı</h1>
+    <p class="subline" id="headerSubline">AKA'nın büyük bir filo müşterisinde, Verita modelinde tekrarlayan bir teknik arıza patlak verdi. Sözleşme feshi tehdidi masada. Üst yönetim 30 dakika içinde net bir aksiyon planı bekliyor — ve ekibiniz şu an dağılmaya çok yakın.</p>
+  </header>
+
+  <div id="briefingScreen" class="briefing">
+
+    <div id="briefPhase1">
+      <div class="brief-card">
+        <p>Önde gelen otomobil firması AKA'nın en büyük filo ortaklarından birine teslim edilen büyük bir Verita partisinde, aynı anda çok sayıda araçta tekrarlayan bir teknik arıza tespit edildi. Kritik yedek parça teminatındaki gecikme ve bu arıza tipi için henüz tamamlanmamış teknisyen eğitimi, servis ağının krizi hızla çözmesini engelliyor. Müşteri, sözleşmeyi gözden geçirme ve tazminat talep etme tehdidinde bulunuyor; konu genel müdürlüğe taşındı.</p>
+        <p>Bu simülasyonda hangi pozisyonu üstlendiğinizi seçin — kriz metni ve toplantıdaki iki ekip üyesi buna göre şekillenecek.</p>
+        <label class="select-label" for="roleSelect">POZİSYONUNUZ</label>
+        <select class="role-select" id="roleSelect"></select>
+      </div>
+      <button class="start-btn" id="continueBtn">Devam Et</button>
+    </div>
+
+    <div id="briefPhase2" style="display:none;">
+      <div class="brief-card">
+        <p id="stakeIntro"></p>
+        <div class="stake-line" id="stakeLine"></div>
+        <div class="cast">
+          <div class="cast-row mert">
+            <span class="name">Mert <span class="role-tag" id="mertRoleTag"></span></span>
+            <span class="desc" id="mertDesc"></span>
+          </div>
+          <div class="cast-row selin">
+            <span class="name">Selin <span class="role-tag" id="selinRoleTag"></span></span>
+            <span class="desc" id="selinDesc"></span>
+          </div>
+        </div>
+      </div>
+      <button class="start-btn" id="startBtn">Başla</button>
+      <button class="back-link" id="backBtn">← Pozisyonu değiştir</button>
+    </div>
+
+  </div>
+
+  <div id="chatScreen" class="chat" style="display:none;"></div>
+
+  <div id="errorBanner" class="error-banner" style="display:none;"></div>
+
+  <div id="composer" class="composer" style="display:none;">
+    <textarea id="userInput" placeholder="Ekibe ne söylüyorsunuz?" rows="1"></textarea>
+    <button id="sendBtn">Gönder</button>
+  </div>
+  <div class="turn-hint" id="turnHint" style="display:none;"></div>
+
+  <div id="evalScreen" class="eval-wrap" style="display:none;"></div>
+
+</div>
+
+<script>
+(function(){
+  const MAX_TURNS = 10;
+
+  const CRISIS_NARRATIVE = `KRİZİN ÖZETİ (OTOMOTİV / AKA — önde gelen bir otomobil firması; araç modeli: Verita):
+Önde gelen bir otomobil firması olan AKA'nın en büyük filo ortaklarından birine (büyük bir kurumsal filo/kiralama şirketi) teslim edilen 500 araçlık Verita model filosunda, teslimattan kısa süre sonra aynı anda çok sayıda araçta tekrarlayan bir teknik arıza tespit edildi. Kritik bir yedek parçanın tedarik sürecindeki gecikme ve bu arıza tipi için henüz tamamlanmamış teknisyen eğitimi, servis ağının krizi hızla çözmesini engelliyor. Müşteri, filo operasyonunun aksadığını belirterek sözleşmeyi gözden geçirme ve tazminat talep etme tehdidinde bulunuyor. Konu genel müdürlüğe taşındı; üst yönetim 30 dakika içinde somut bir aksiyon planı istiyor.`;
+
+  const ROLE_DATA = [
+    { id: 'ssh_garanti', title: 'SSH Garanti Yöneticisi',
+      stake: "Garanti onayı bekleyen 60'tan fazla araç var; karar gecikirse maliyetin tamamı distribütöre kalabilir.",
+      mertRole: 'Yedek Parça Satın Alma Yöneticisi', mertReason: 'gecikmenin faturasının garanti ekibine kesilmesinden rahatsız',
+      selinRole: 'SSH ve Operasyon Yöneticisi', selinFear: 'servis kapasitesinin tıkandığını, garanti onayları gecikince suçun kendisine kesileceğini düşünüyor' },
+    { id: 'bayi_is_gelistirme', title: 'Bayi ve İş Geliştirme Yöneticisi',
+      stake: 'Müşteri sözleşmesi yıllık hacmin büyük kısmını taşıyor; iptal olursa hedefler büyük darbe alır.',
+      mertRole: 'Garenta Bayi Yöneticisi', mertReason: 'bu ilişkiyi kendisinin kurduğunu düşünüyor',
+      selinRole: 'Müşteri İlişkileri Yöneticisi', selinFear: 'uç kullanıcı şikayetlerinin arttığını, ilişkinin telafisi zor şekilde bozulacağını düşünüyor' },
+    { id: 'aka_pazarlama_iletisim', title: 'Pazarlama İletişim Yöneticisi',
+      stake: 'Konu basına veya sosyal medyaya sızarsa marka itibarı doğrudan risk altında.',
+      mertRole: 'Dijital Pazarlama Yöneticisi', mertReason: 'kriz iletişimini hep kendisinin yönettiğini hatırlatıyor',
+      selinRole: 'Müşteri İlişkileri Yöneticisi', selinFear: 'şikayetlerin sosyal medyada büyüdüğünü, konunun kontrolden çıkacağını düşünüyor' },
+    { id: 'ssh_operasyon', title: 'SSH ve Operasyon Yöneticisi',
+      stake: 'Servis ağı zaten dolu; 500 araçlık ek yükü kaldıracak kapasite yok.',
+      mertRole: 'Servis Teknik Operasyon Yöneticisi', mertReason: 'sahayı hep birlikte yönettiklerini hatırlatıyor',
+      selinRole: 'SSH Garanti Yöneticisi', selinFear: 'garanti onayları gecikince servis biriminin suçlanacağından endişeli' },
+    { id: 'yedek_parca_satinalma', title: 'Yedek Parça Satın Alma Yöneticisi',
+      stake: 'Kritik parça teminatı gecikmiş; acil ithalat maliyeti ve teslim süresi belirsiz.',
+      mertRole: 'Yedek Parça Satış Yöneticisi', mertReason: 'tedarik gecikmesinin kendi satış rakamlarını da vurduğunu söylüyor',
+      selinRole: 'SSH Garanti Yöneticisi', selinFear: 'garanti onayı bekleyen araç sayısının arttığını, parça gelmezse krizin büyüyeceğini düşünüyor' },
+    { id: 'bordro_ozluk', title: 'Bordro ve Özlük İşleri Yöneticisi',
+      stake: 'Acil servis için ek vardiya/mesai planlanması gerekiyor; bütçe dışı bir yük doğuyor.',
+      mertRole: 'İnsan Kaynakları Yöneticisi', mertReason: 'ekstra vardiya kararlarını hep birlikte aldıklarını hatırlatıyor',
+      selinRole: 'Finansal Analiz Yöneticisi', selinFear: 'acil mesai maliyetinin bütçeyi zorlayacağını, üst yönetimin bunu sorgulayacağını düşünüyor' },
+    { id: 'finansal_analiz', title: 'Finansal Analiz Yöneticisi',
+      stake: 'Tazminat ve acil müdahale maliyetleri çeyrek hedeflerini doğrudan sarsabilir.',
+      mertRole: 'Finansal Raporlama Yöneticisi', mertReason: 'rakamları hep birlikte modellediklerini hatırlatıyor',
+      selinRole: 'Büyüme ve İçgörüler Yöneticisi', selinFear: 'büyüme metriklerinin bu krizden zarar göreceğini, üst yönetime nasıl anlatacağını bilmiyor' },
+    { id: 'aka_yedek_parca_satis', title: 'Yedek Parça Satış Yöneticisi',
+      stake: 'Parça stoku garanti onarımına kayarsa bayi satışları ve gelir aksar.',
+      mertRole: 'Yedek Parça Satın Alma Yöneticisi', mertReason: 'tedarik tarafındaki gecikmenin kendi üstüne yıkılmasından rahatsız',
+      selinRole: 'Bayi ve İş Geliştirme Yöneticisi', selinFear: 'bayilerin parça bulamadığı için isyan ettiğini, ilişkilerin bozulacağını düşünüyor' },
+    { id: 'dijital_pazarlama', title: 'Dijital Pazarlama Yöneticisi',
+      stake: 'Filo kullanıcılarının şikayetleri sosyal medyada hızla büyüyor.',
+      mertRole: 'Pazarlama İletişim Yöneticisi', mertReason: 'kriz iletişimi konusunda son sözün hep kendisinde olduğunu hatırlatıyor',
+      selinRole: 'Müşteri İlişkileri Yöneticisi', selinFear: 'gelen şikayet hacminin yönetilemez hale geldiğini düşünüyor' },
+    { id: 'aka_teknik_egitim', title: 'Teknik Eğitim Yöneticisi',
+      stake: 'Teknisyenler bu spesifik arıza için henüz eğitilmedi; hızlı bir eğitim planı gerekebilir.',
+      mertRole: 'Servis Teknik Operasyon Yöneticisi', mertReason: 'eğitim eksikliği suçlamasına karşı savunmaya geçiyor',
+      selinRole: 'SSH Garanti Yöneticisi', selinFear: 'teknisyenlerin arızayı çözemediğini, garanti dosyalarının birikeceğini düşünüyor' },
+    { id: 'musteri_iliskileri', title: 'Müşteri İlişkileri Yöneticisi',
+      stake: 'Uç kullanıcı şikayetleri doğrudan ona geliyor; yanıt süresi hedefleri zorlanıyor.',
+      mertRole: 'Bayi ve İş Geliştirme Yöneticisi', mertReason: 'bayi ilişkisini önceliklendirip şikayetleri abartılı bulduğunu söylüyor',
+      selinRole: 'Dijital Pazarlama Yöneticisi', selinFear: 'şikayetlerin sosyal medyada büyüyüp krizi büyüteceğinden endişeli' },
+    { id: 'garenta_bayi', title: 'Garenta Bayi Yöneticisi',
+      stake: 'Filo operasyonu sahada aksıyor; kendi kiracı müşterilerine hesap vermek zorunda.',
+      mertRole: 'Bayi ve İş Geliştirme Yöneticisi', mertReason: 'bayi ağı ilişkisini hep birlikte yönettiklerini hatırlatıyor',
+      selinRole: 'Müşteri İlişkileri Yöneticisi', selinFear: 'filo kullanıcılarından gelen şikayetlerin katlanarak arttığını düşünüyor' },
+    { id: 'buyume_icgoruler', title: 'Büyüme ve İçgörüler Yöneticisi',
+      stake: 'NPS ve büyüme metrikleri bu krizden doğrudan etkilenecek.',
+      mertRole: 'Stratejik Planlama Yöneticisi', mertReason: 'büyüme senaryolarını hep birlikte kurguladıklarını hatırlatıyor',
+      selinRole: 'Finansal Analiz Yöneticisi', selinFear: 'krizin maliyetinin büyüme bütçesinden kesileceğinden endişeli' },
+    { id: 'aka_stratejik_planlama', title: 'Stratejik Planlama Yöneticisi',
+      stake: 'Bu kriz, yıllık stratejik planın varsayımlarını sarsıyor.',
+      mertRole: 'Proje ve Süreç Geliştirme Yöneticisi', mertReason: 'süreç tasarımının sorgulanmasından rahatsız',
+      selinRole: 'Büyüme ve İçgörüler Yöneticisi', selinFear: 'stratejik hedeflerin bu krizle birlikte revize edilmek zorunda kalacağını düşünüyor' },
+    { id: 'insan_kaynaklari', title: 'İnsan Kaynakları Yöneticisi',
+      stake: 'Acil kapasite için ek personel veya mesai kararının hızla alınması gerekiyor.',
+      mertRole: 'Bordro ve Özlük İşleri Yöneticisi', mertReason: 'ek vardiya kararlarını hep birlikte aldıklarını hatırlatıyor',
+      selinRole: 'Servis Teknik Operasyon Yöneticisi', selinFear: 'teknisyen kapasitesinin krizi kaldıramayacağını düşünüyor' },
+    { id: 'proje_surec', title: 'Proje ve Süreç Geliştirme Yöneticisi',
+      stake: "Krizin nasıl patladığı sorusunun cevabı doğrudan süreç tasarımına çıkıyor.",
+      mertRole: 'Stratejik Planlama Yöneticisi', mertReason: 'süreç eksikliğinin stratejiyle ilişkilendirilmesinden rahatsız',
+      selinRole: 'SSH ve Operasyon Yöneticisi', selinFear: 'sürecin neden bu kadar hızlı çöktüğünü açıklayamayacağından endişeli' },
+    { id: 'servis_teknik_operasyon', title: 'Servis Teknik Operasyon Yöneticisi',
+      stake: 'Saha ekipleri fiilen arızayı çözecek taraf; kapasite en kritik darboğaz.',
+      mertRole: 'Teknik Eğitim Yöneticisi', mertReason: 'eğitim eksikliği eleştirisine karşı çıkıyor',
+      selinRole: 'SSH ve Operasyon Yöneticisi', selinFear: 'servis kapasitesinin krizi kaldıramayacağını, üst yönetimin bunu affetmeyeceğini düşünüyor' },
+    { id: 'finansal_raporlama', title: 'Finansal Raporlama Yöneticisi',
+      stake: 'Krizin maliyetinin çeyrek raporlarına nasıl yansıyacağı netleşmek zorunda.',
+      mertRole: 'Finansal Analiz Yöneticisi', mertReason: 'rakamların hep birlikte hazırlandığını hatırlatıyor',
+      selinRole: 'Bordro ve Özlük İşleri Yöneticisi', selinFear: 'ekstra maliyetin bordroya nasıl yansıyacağından ve raporun bozulacağından endişeli' }
+  ];
+
+  function buildScenarioText(role){
+    return `ROL VE BAĞLAM:
+Sen kriz anında toplanmış olan bir ekibin iki farklı üyesini aynı anda canlandıran bir simülasyon motorusun.
+Katılımcı, ekibin içerisinden henüz yeni yönetici/lider olarak atanmış kişidir ve şu an "${role.title}" pozisyonundadır.
+
+${CRISIS_NARRATIVE}
+
+KATILIMCININ BU KRİZDEKİ PAYI: ${role.stake}
+
+CANLANDIRILACAK KARAKTERLER (bu oturuma özel olarak atanmıştır — isimlerini "Mert" ve "Selin" olarak kullan, unvanlarını aşağıdaki gibi işle):
+1. Mert - ${role.mertRole}. Katılımcının dün aynı masada çalıştığı kıdemli arkadaşı. Terfiyi kendisi bekliyordu; ${role.mertReason}. Eski samimiyete sığınarak toplantı disiplinini bozar, katılımcının otoritesini dolaylı yoldan test eder ve işi ciddiyetsizliğe veya "Eskiden böyle yapmazdık" nostaljisine çeker. Kendi departmanının (${role.mertRole}) bakış açısından, sorumluluğu katılımcının alanına yıkmaya çalışır.
+2. Selin - ${role.selinRole}. Krizden aşırı endişe duyan, topu başkalarına atan ("Ben uyardım ama dinlemediniz, üst yönetim bizi kovacak mı?") ve kaosu tırmandıran ekip üyesi; ${role.selinFear}. Kendi departmanının (${role.selinRole}) somut kaygılarını dile getirir.`;
+  }
+
+  const RULES_STATIC = `GÖREVİN VE DİNAMİK:
+- Her cevabında duruma göre Mert'in ve/veya Selin'in tepkilerini ayrı paragraflarda etiketleyerek ver. Her paragraf TAM OLARAK "Mert: " veya "Selin: " ile başlamalı (isim, iki nokta, boşluk), başka hiçbir konuşmacı veya anlatıcı sesi kullanma.
+- Ekip içinde kaos, birbirini suçlama ve odağın dağılması havası yarat. Yukarıda tanımlanan departman bağlamlarını (parça, garanti, servis, pazarlama, finans vb.) somut biçimde konuşturmalarına yansıt — jenerik konuşmalar değil, o role özgü kaygılar dile getirsinler.
+- Katılımcının bu çoklu ses ortamında kontrolü ele almasını, sınır koymasını ve ekibi çözüme hizalamasını test et.
+- Karakterlerin tepkileri katılımcının söylediklerine gerçekten tepki versin; eğer katılımcı iyi bir sınır koyarsa veya net bir yön verirse, karakterler bunu (isteksizce de olsa) hissettirsin; kötü yönetilirse kaos daha da artsın.
+- Toplantı, sistem tarafından "son tur" olarak işaretlenen mesajdan sonra MUTLAKA biter ve doğrudan değerlendirme moduna geçilir.
+
+DEĞERLENDİRME KRİTERLERİ (Bates ExPI™ Yönetici Varlığı Modeli — tam model, 3 kategori x 5 boyut, her biri [1-10]):
+
+KARAKTER (Character) — kim olduğu:
+1. Özgünlük (Authenticity): Sahici ve şeffaf davrandı mı, yoksa rol yapıyormuş gibi mi hissettirdi?
+2. Bütünlük (Integrity): Etik ve güvenilir bir duruş sergiledi mi, sözü ile davranışı tutarlı mıydı?
+3. Önemseme (Concern): Selin'in paniğine ve Mert'in kırgınlığına şefkatle mi yaklaştı, yoksa görmezden mi geldi?
+4. Ölçülülük (Restraint): Kriz altında bilinçli ve sakin kaldı mı, tepkileri dengeliydi mi?
+5. Tevazu (Humility): Açık fikirli miydi, öz farkındalık gösterdi mi (örn. hata kabul etme, dinleme)?
+
+ÖZ / DERİNLİK (Substance) — ne getirdiği:
+6. Pratik Bilgelik (Practical Wisdom): İçgörülü ve amaca uygun çözümler sundu mu?
+7. Özgüven (Confidence): Kararlı davrandı mı, farklı fikirlere açık kalarak mı yoksa savunmaya geçerek mi?
+8. Soğukkanlılık (Composure): Ekip içi panik (Selin) ve pasif direnç (Mert) karşısında dengeli kalabildi mi? O da telaşa kapıldı mı veya öfkelendi mi?
+9. Rezonans / Uyum (Resonance): Odadaki duygusal frekansı yakaladı mı, insanları anladığını hissettirdi mi?
+10. Vizyon (Vision): Stratejik düşündü mü, krizin ötesini gösteren ilham verici bir çerçeve sundu mu?
+
+TARZ / STİL (Style) — nasıl yaptığı:
+11. Duruş / Tavır (Demeanor): Etkileyici ve incelikli bir hava taşıdı mı?
+12. Niyetlilik (Intentionality): Dağılan ekibi krizin çözümüne ve acil aksiyonlara odaklayabildi mi? Taktiksel yönlendirme yaptı mı, yoksa ekip içi kısır tartışmalara mı teslim oldu?
+13. Kapsayıcılık (Inclusiveness): Mert ve Selin'i sürece kattı mı, onları yetkilendirdi mi, yoksa dışladı mı?
+14. Etkileşim (Interactivity): Erişilebilir miydi, dikkatle dinledi mi, yoksa tek taraflı mı konuştu?
+15. Atılganlık (Assertiveness): Sözünü yapıcı biçimde söyledi mi, sınır koyabildi mi, yoksa ya sessiz kaldı ya da saldırganlaştı mı?
+
+TOPLANTI SONU İSTENDİĞİNDE, ÇIKTI FORMATI (harfiyen bu formatı ve bu satırları kullan, başka hiçbir şey ekleme; skorları verirken kısa ve doğrudan davran, ek yorum ekleme):
+---
+🎯 SİMÜLASYON TAMAMLANDI: YAPAY ZEKA SİZİ NASIL DENEYİMLİYOR?
+
+📊 Bates ExPI™ Yönetici Varlığı Modeli:
+
+KARAKTER (Character):
+• Özgünlük (Authenticity): [Skor]/10
+• Bütünlük (Integrity): [Skor]/10
+• Önemseme (Concern): [Skor]/10
+• Ölçülülük (Restraint): [Skor]/10
+• Tevazu (Humility): [Skor]/10
+
+ÖZ / DERİNLİK (Substance):
+• Pratik Bilgelik (Practical Wisdom): [Skor]/10
+• Özgüven (Confidence): [Skor]/10
+• Soğukkanlılık (Composure): [Skor]/10
+• Rezonans / Uyum (Resonance): [Skor]/10
+• Vizyon (Vision): [Skor]/10
+
+TARZ / STİL (Style):
+• Duruş / Tavır (Demeanor): [Skor]/10
+• Niyetlilik (Intentionality): [Skor]/10
+• Kapsayıcılık (Inclusiveness): [Skor]/10
+• Etkileşim (Interactivity): [Skor]/10
+• Atılganlık (Assertiveness): [Skor]/10
+
+🔍 Ekip Olarak Sizi Nasıl Deneyimledik?:
+- Mert'in Gözünden: (Liderlik duruşunuz ve eski arkadaşlık dengesini yönetişiniz onda saygı mı uyandırdı yoksa açık mı verdi?)
+- Selin'in Gözünden: (Paniği yatıştırıp ona güven ve net yön verdiniz mi?)
+- Güçlü Yönünüz: (Kullandığı spesifik bir müdahale veya cümle referansıyla)
+- Kör Noktanız / Gelişim Alanı: (Neyi daha farklı yönetebilirdi?)
+---
+
+ÖNEMLİ KURALLAR:
+- Sadece Türkçe yaz.
+- Değerlendirme moduna geçene kadar ASLA skor verme, ASLA "SİMÜLASYON TAMAMLANDI" yazma.
+- Değerlendirme moduna geçtiğinde SADECE yukarıdaki formatı ver, başka diyalog veya sahne yazma.
+- Rol içi diyaloglar kısa ve gerçekçi olsun (her karakter için 2-5 cümle), tiyatral anlatım küpleri (örn. "*gülümser*") kullanma.`;
+
+  let RULES = '';
+  let currentRole = null;
+  let turns = [];
+  let turnCount = 0;
+  let ended = false;
+  let sample = null;
+
+  const chatScreen = document.getElementById('chatScreen');
+  const briefingScreen = document.getElementById('briefingScreen');
+  const briefPhase1 = document.getElementById('briefPhase1');
+  const briefPhase2 = document.getElementById('briefPhase2');
+  const roleSelect = document.getElementById('roleSelect');
+  const continueBtn = document.getElementById('continueBtn');
+  const backBtn = document.getElementById('backBtn');
+  const stakeIntro = document.getElementById('stakeIntro');
+  const stakeLine = document.getElementById('stakeLine');
+  const mertRoleTag = document.getElementById('mertRoleTag');
+  const mertDesc = document.getElementById('mertDesc');
+  const selinRoleTag = document.getElementById('selinRoleTag');
+  const selinDesc = document.getElementById('selinDesc');
+  const headerSubline = document.getElementById('headerSubline');
+  const composer = document.getElementById('composer');
+  const turnHint = document.getElementById('turnHint');
+  const userInput = document.getElementById('userInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const startBtn = document.getElementById('startBtn');
+  const errorBanner = document.getElementById('errorBanner');
+  const evalScreen = document.getElementById('evalScreen');
+  const statusTag = document.getElementById('statusTag');
+  const timerDisplay = document.getElementById('timerDisplay');
+
+  ROLE_DATA.forEach(role => {
+    const opt = document.createElement('option');
+    opt.value = role.id;
+    opt.textContent = role.title;
+    roleSelect.appendChild(opt);
+  });
+
+  function showError(msg){
+    errorBanner.textContent = msg;
+    errorBanner.style.display = 'block';
+  }
+  function clearError(){ errorBanner.style.display = 'none'; }
+
+  function scrollToBottom(){
+    chatScreen.scrollTop = chatScreen.scrollHeight;
+  }
+
+  function renderSegmentedMessage(text){
+    const re = /(Mert|Selin):\s*([\s\S]*?)(?=\n(?:Mert|Selin):|$)/g;
+    let match;
+    let found = false;
+    const frag = document.createDocumentFragment();
+    while ((match = re.exec(text)) !== null){
+      found = true;
+      const speaker = match[1];
+      const content = match[2].trim();
+      if (!content) continue;
+      const wrap = document.createElement('div');
+      wrap.className = 'msg ' + (speaker === 'Mert' ? 'mert' : 'selin');
+      const label = document.createElement('div');
+      label.className = 'label';
+      label.textContent = speaker;
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = content;
+      wrap.appendChild(label);
+      wrap.appendChild(bubble);
+      frag.appendChild(wrap);
+    }
+    if (!found){
+      const wrap = document.createElement('div');
+      wrap.className = 'msg system';
+      const bubble = document.createElement('div');
+      bubble.className = 'bubble';
+      bubble.textContent = text.trim();
+      wrap.appendChild(bubble);
+      frag.appendChild(wrap);
+    }
+    chatScreen.appendChild(frag);
+    scrollToBottom();
+  }
+
+  function renderUserMessage(text){
+    const wrap = document.createElement('div');
+    wrap.className = 'msg user';
+    const label = document.createElement('div');
+    label.className = 'label';
+    label.style.textAlign = 'right';
+    label.style.color = '#79808c';
+    label.textContent = 'Siz';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = text;
+    wrap.appendChild(label);
+    wrap.appendChild(bubble);
+    chatScreen.appendChild(wrap);
+    scrollToBottom();
+  }
+
+  function addThinkingIndicator(){
+    const el = document.createElement('div');
+    el.className = 'thinking';
+    el.id = 'thinkingIndicator';
+    el.innerHTML = '<span class="dot"></span><span class="dot"></span><span class="dot"></span><span>ekip cevap yazıyor</span>';
+    chatScreen.appendChild(el);
+    scrollToBottom();
+    return el;
+  }
+  function removeThinkingIndicator(){
+    const el = document.getElementById('thinkingIndicator');
+    if (el) el.remove();
+  }
+
+  function updateTurnHint(){
+    if (ended){
+      turnHint.style.display = 'none';
+      return;
+    }
+    turnHint.style.display = 'block';
+    turnHint.textContent = 'Tur ' + (turnCount + 1) + ' / ' + MAX_TURNS;
+  }
+
+  function setComposerBusy(busy){
+    sendBtn.disabled = busy;
+    userInput.disabled = busy;
+  }
+
+  const WORKER_URL = 'https://ilktoplantisim.gdoguer.workers.dev/';
+
+  async function initSample(){
+    return async function sample(messages, opts){
+      let r;
+      try{
+        r = await fetch(WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages })
+        });
+      }catch(netErr){
+        const err = new Error('network'); err.code = 'upstream_error'; throw err;
+      }
+      if (!r.ok){
+        const err = new Error('HTTP ' + r.status);
+        err.code = r.status === 429 ? 'rate_limited' : 'upstream_error';
+        throw err;
+      }
+      const data = await r.json();
+      if (!data || !data.text){
+        const err = new Error('empty'); err.code = 'empty_completion'; throw err;
+      }
+      if (opts && typeof opts.onText === 'function') opts.onText({ text: data.text });
+      return { text: data.text };
+    };
+  }
+
+  function autoGrow(){
+    userInput.style.height = 'auto';
+    userInput.style.height = Math.min(userInput.scrollHeight, 120) + 'px';
+  }
+  userInput.addEventListener('input', autoGrow);
+  userInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey){
+      e.preventDefault();
+      handleSend();
+    }
+  });
+
+  continueBtn.addEventListener('click', () => {
+    const roleId = roleSelect.value;
+    currentRole = ROLE_DATA.find(r => r.id === roleId) || ROLE_DATA[0];
+    RULES = buildScenarioText(currentRole) + '\n\n' + RULES_STATIC;
+
+    stakeIntro.textContent = 'Bu krizde "' + currentRole.title + '" olarak masadasınız. Dün bu masada onlarla eşit bir çalışan olarak oturuyordunuz — bugün toplantıyı siz yönetiyorsunuz.';
+    stakeLine.textContent = 'SİZİN PAYINIZ: ' + currentRole.stake;
+    mertRoleTag.textContent = '· ' + currentRole.mertRole;
+    mertDesc.textContent = 'Eski akranınız, terfiyi kendisi bekliyordu. Otoritenizi dolaylı yoldan test edecek, disiplini gevşetmeye çalışacak.';
+    selinRoleTag.textContent = '· ' + currentRole.selinRole;
+    selinDesc.textContent = 'Panikte, topu başkalarına atıyor. Odayı kaosa çekme riski yüksek.';
+    headerSubline.textContent = currentRole.stake;
+
+    briefPhase1.style.display = 'none';
+    briefPhase2.style.display = 'flex';
+    briefPhase2.style.flexDirection = 'column';
+    briefPhase2.style.gap = '18px';
+  });
+
+  backBtn.addEventListener('click', () => {
+    briefPhase2.style.display = 'none';
+    briefPhase1.style.display = 'block';
+  });
+
+  startBtn.addEventListener('click', async () => {
+    startBtn.disabled = true;
+    startBtn.textContent = 'Hazırlanıyor…';
+    backBtn.style.display = 'none';
+    sample = await initSample();
+    if (!sample){
+      startBtn.disabled = false;
+      startBtn.textContent = 'Başla';
+      backBtn.style.display = 'block';
+      return;
+    }
+
+    try{
+      const opener = 'Şimdi krizi başlat: talimatlardaki formatta (yalnızca "Mert: " ve "Selin: " etiketleriyle) açılış sahnesini yaz. Karakterler zaten telaşla konuşmaya başlamış olsun, katılımcıya henüz doğrudan soru sormasınlar; 2-4 cümlelik iki kısa paragraf yeterli. Kendi departman bağlamlarına (unvanlarına) özgü somut bir ayrıntı kullansınlar.';
+      const result = await sample([{ role: 'user', content: RULES + '\n\n' + opener }], { cache: false, modelTier: 'default' });
+      const openingText = result.text;
+      turns.push({ role: 'assistant', content: openingText });
+
+      briefingScreen.style.display = 'none';
+      chatScreen.style.display = 'flex';
+      composer.style.display = 'flex';
+      renderSegmentedMessage(openingText);
+      updateTurnHint();
+      userInput.focus();
+    }catch(e){
+      startBtn.disabled = false;
+      startBtn.textContent = 'Başla';
+      backBtn.style.display = 'block';
+      handleSampleErrorOnBrief(e);
+    }
+  });
+
+  function handleSampleErrorOnBrief(e){
+    const code = e && e.code ? e.code : 'upstream_error';
+    const copy = {
+      not_granted: 'Bu simülasyonu çalıştırmak için izin verilmedi. Claude hesabıyla giriş yapıp izni onaylayın.',
+      rate_limited: 'Çok fazla istek gönderildi, birazdan tekrar deneyin.',
+      session_expired: 'Oturumunuz sona ermiş, sayfayı yenileyip tekrar giriş yapın.',
+      refused: 'Sahne üretilemedi, tekrar deneyin.',
+      empty_completion: 'Bir cevap üretilemedi, tekrar deneyin.',
+      upstream_error: 'Bağlantıda geçici bir sorun oluştu, tekrar deneyin.'
+    };
+    showError(copy[code] || 'Beklenmeyen bir hata oluştu, tekrar deneyin.');
+  }
+
+  sendBtn.addEventListener('click', handleSend);
+
+  async function handleSend(){
+    if (ended) return;
+    const text = userInput.value.trim();
+    if (!text || !sample) return;
+    clearError();
+
+    turnCount += 1;
+    const isFinalTurn = turnCount >= MAX_TURNS;
+
+    renderUserMessage(text);
+    userInput.value = '';
+    autoGrow();
+    setComposerBusy(true);
+
+    const apiContent = isFinalTurn
+      ? text + '\n\n[SİSTEM NOTU — kullanıcıya gösterme: Bu son tur (' + turnCount + '/' + MAX_TURNS + '). Bu mesajdan sonra sahneyi normal şekilde kısaca kapat (gerekirse tek kısa tepki) ve HEMEN ARDINDAN, başka hiçbir diyalog eklemeden, talimatlardaki tam değerlendirme formatını ver.]'
+      : text + '\n\n[SİSTEM NOTU — kullanıcıya gösterme: Tur ' + turnCount + '/' + MAX_TURNS + '. Role devam et, henüz değerlendirmeye geçme.]';
+
+    turns.push({ role: 'user', content: apiContent });
+
+    const thinkingEl = addThinkingIndicator();
+    let bubbleForStream = null;
+
+    try{
+      const result = await sample([{ role: 'user', content: RULES }, ...turns], {
+        cache: false,
+        modelTier: 'default',
+        onText: ({ text: whole }) => {
+          if (whole.includes('SİMÜLASYON TAMAMLANDI')) return; // don't stream-render eval text into chat
+          removeThinkingIndicator();
+          if (!bubbleForStream){
+            bubbleForStream = document.createElement('div');
+            bubbleForStream.className = 'msg system';
+            const b = document.createElement('div');
+            b.className = 'bubble';
+            b.style.color = 'var(--text-faint)';
+            bubbleForStream.appendChild(b);
+            chatScreen.appendChild(bubbleForStream);
+          }
+          bubbleForStream.querySelector('.bubble').textContent = 'yazıyor…';
+          scrollToBottom();
+        }
+      });
+
+      removeThinkingIndicator();
+      if (bubbleForStream) bubbleForStream.remove();
+
+      const replyText = result.text;
+      turns.push({ role: 'assistant', content: replyText });
+
+      if (replyText.includes('SİMÜLASYON TAMAMLANDI')){
+        ended = true;
+        renderSystemLine('Toplantı sona erdi.');
+        showEvaluation(replyText);
+      } else {
+        renderSegmentedMessage(replyText);
+        updateTurnHint();
+        if (isFinalTurn){
+          // Model didn't end on its own even though told to — force one more closing call.
+          await forceClose();
+        }
+      }
+    }catch(e){
+      removeThinkingIndicator();
+      if (bubbleForStream) bubbleForStream.remove();
+      handleSampleError(e);
+    }finally{
+      setComposerBusy(false);
+      if (!ended) userInput.focus();
+    }
+  }
+
+  async function forceClose(){
+    turns.push({ role: 'user', content: '[SİSTEM NOTU — kullanıcıya gösterme: Şimdi HEMEN, başka diyalog eklemeden, talimatlardaki tam değerlendirme formatını ver.]' });
+    const thinkingEl = addThinkingIndicator();
+    try{
+      const result = await sample([{ role: 'user', content: RULES }, ...turns], { cache: false, modelTier: 'default' });
+      removeThinkingIndicator();
+      const replyText = result.text;
+      turns.push({ role: 'assistant', content: replyText });
+      ended = true;
+      renderSystemLine('Toplantı sona erdi.');
+      showEvaluation(replyText);
+    }catch(e){
+      removeThinkingIndicator();
+      handleSampleError(e);
+    }
+  }
+
+  function renderSystemLine(text){
+    const wrap = document.createElement('div');
+    wrap.className = 'msg system';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+    bubble.textContent = '— ' + text + ' —';
+    wrap.appendChild(bubble);
+    chatScreen.appendChild(wrap);
+    scrollToBottom();
+  }
+
+  function handleSampleError(e){
+    const code = e && e.code ? e.code : 'upstream_error';
+    const copy = {
+      not_granted: 'Bu simülasyonu çalıştırmak için izin verilmedi.',
+      rate_limited: 'Çok fazla istek gönderildi, birazdan tekrar deneyin.',
+      session_expired: 'Oturumunuz sona ermiş, sayfayı yenileyip tekrar giriş yapın.',
+      refused: 'Bu mesaj işlenemedi, farklı bir şekilde ifade etmeyi deneyin.',
+      empty_completion: 'Bir cevap üretilemedi, tekrar deneyin.',
+      prompt_too_large: 'Konuşma çok uzadı, lütfen sayfayı yenileyip yeniden başlatın.',
+      upstream_error: 'Bağlantıda geçici bir sorun oluştu, tekrar deneyin.'
+    };
+    showError(copy[code] || 'Beklenmeyen bir hata oluştu, tekrar deneyin.');
+    if (e && e.text){
+      turns.push({ role: 'assistant', content: e.text });
+    } else {
+      turns.pop();
+      turnCount = Math.max(0, turnCount - 1);
+    }
+  }
+
+  // ---------- Evaluation rendering ----------
+  const TRAIT_GROUPS = [
+    { key: 'character', title: 'Karakter', sub: 'Character', traits: [
+      { tr: 'Özgünlük', en: 'Authenticity' },
+      { tr: 'Bütünlük', en: 'Integrity' },
+      { tr: 'Önemseme', en: 'Concern' },
+      { tr: 'Ölçülülük', en: 'Restraint' },
+      { tr: 'Tevazu', en: 'Humility' }
+    ]},
+    { key: 'substance', title: 'Öz / Derinlik', sub: 'Substance', traits: [
+      { tr: 'Pratik Bilgelik', en: 'Practical Wisdom' },
+      { tr: 'Özgüven', en: 'Confidence' },
+      { tr: 'Soğukkanlılık', en: 'Composure' },
+      { tr: 'Rezonans / Uyum', en: 'Resonance' },
+      { tr: 'Vizyon', en: 'Vision' }
+    ]},
+    { key: 'style', title: 'Tarz / Stil', sub: 'Style', traits: [
+      { tr: 'Duruş / Tavır', en: 'Demeanor' },
+      { tr: 'Niyetlilik', en: 'Intentionality' },
+      { tr: 'Kapsayıcılık', en: 'Inclusiveness' },
+      { tr: 'Etkileşim', en: 'Interactivity' },
+      { tr: 'Atılganlık', en: 'Assertiveness' }
+    ]}
+  ];
+
+  function escapeRegExp(s){
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  function extractScoreByEnglishName(text, en){
+    const re = new RegExp('\\(' + escapeRegExp(en) + '\\)[^\\n\\d]{0,6}(\\d{1,2})\\s*\\/\\s*10');
+    const m = text.match(re);
+    if (m) return Math.max(0, Math.min(10, parseInt(m[1], 10)));
+    return null;
+  }
+
+  function extractSection(text, startLabels, stopLabels){
+    for (const start of startLabels){
+      const startRe = new RegExp(start + '[:：]?\\s*');
+      const startMatch = text.match(startRe);
+      if (!startMatch) continue;
+      const from = startMatch.index + startMatch[0].length;
+      let to = text.length;
+      for (const stop of stopLabels){
+        const stopRe = new RegExp(stop, 'g');
+        stopRe.lastIndex = from;
+        const stopMatch = stopRe.exec(text);
+        if (stopMatch && stopMatch.index < to) to = stopMatch.index;
+      }
+      const section = text.slice(from, to).trim().replace(/^[-•\s]+/, '');
+      if (section) return section;
+    }
+    return null;
+  }
+
+  function showEvaluation(rawText){
+    chatScreen.style.display = 'none';
+    composer.style.display = 'none';
+    turnHint.style.display = 'none';
+    clearError();
+    statusTag.textContent = 'DURUM: DEĞERLENDİRME';
+    statusTag.style.color = 'var(--good)';
+    statusTag.style.borderColor = '#3a5c46';
+    timerDisplay.innerHTML = 'Toplantı kapandı';
+
+    const groupsWithScores = TRAIT_GROUPS.map(group => ({
+      ...group,
+      traits: group.traits.map(t => ({ ...t, score: extractScoreByEnglishName(rawText, t.en) }))
+    }));
+    const anyScoreFound = groupsWithScores.some(g => g.traits.some(t => t.score !== null));
+
+    const mertView = extractSection(rawText, ["Mert'in Gözünden"], ["Selin'in Gözünden", 'Güçlü Yönünüz', 'Kör Noktanız']);
+    const selinView = extractSection(rawText, ["Selin'in Gözünden"], ['Güçlü Yönünüz', 'Kör Noktanız']);
+    const strength = extractSection(rawText, ['Güçlü Yönünüz'], ['Kör Noktanız']);
+    const growth = extractSection(rawText, ['Kör Noktanız', 'Gelişim Alanınız'], ['---', '$']);
+
+    const haveStructured = anyScoreFound || mertView || selinView || strength || growth;
+
+    evalScreen.innerHTML = '';
+
+    const head = document.createElement('div');
+    head.className = 'eval-head';
+    head.innerHTML = '<div class="kicker">SİMÜLASYON TAMAMLANDI</div><h2>Bates ExPI™ Yönetici Varlığı Değerlendirmesi</h2>';
+    evalScreen.appendChild(head);
+
+    if (haveStructured){
+      const scoreGroupsBox = document.createElement('div');
+      scoreGroupsBox.className = 'score-groups';
+
+      groupsWithScores.forEach(group => {
+        const groupEl = document.createElement('div');
+        groupEl.className = 'score-group ' + group.key;
+
+        const headEl = document.createElement('div');
+        headEl.className = 'score-group-head';
+        headEl.innerHTML = '<span class="cat-title">' + group.title + '</span><span class="cat-sub">' + group.sub + '</span>';
+        groupEl.appendChild(headEl);
+
+        const listEl = document.createElement('div');
+        listEl.className = 'score-list';
+
+        const fillsToAnimate = [];
+        group.traits.forEach(t => {
+          const row = document.createElement('div');
+          row.className = 'score-row';
+          const shown = t.score === null ? '—' : t.score + '/10';
+          row.innerHTML =
+            '<div class="score-top"><span class="score-name">' + t.tr + ' <span class="score-en">(' + t.en + ')</span></span><span class="score-val">' + shown + '</span></div>' +
+            '<div class="score-track"><div class="score-fill"></div></div>';
+          listEl.appendChild(row);
+          fillsToAnimate.push([row, t.score]);
+        });
+        groupEl.appendChild(listEl);
+        scoreGroupsBox.appendChild(groupEl);
+
+        requestAnimationFrame(() => {
+          fillsToAnimate.forEach(([row, val]) => {
+            row.querySelector('.score-fill').style.width = (val === null ? 0 : val * 10) + '%';
+          });
+        });
+      });
+
+      evalScreen.appendChild(scoreGroupsBox);
+
+      const grid = document.createElement('div');
+      grid.className = 'persp-grid';
+      const cards = [
+        ['mert', "MERT'İN GÖZÜNDEN", mertView],
+        ['selin', "SELİN'İN GÖZÜNDEN", selinView],
+        ['strength', 'GÜÇLÜ YÖNÜNÜZ', strength],
+        ['growth', 'GELİŞİM ALANINIZ', growth]
+      ];
+      cards.forEach(([cls, title, body]) => {
+        if (!body) return;
+        const card = document.createElement('div');
+        card.className = 'persp-card ' + cls;
+        const t = document.createElement('div');
+        t.className = 'persp-title';
+        t.textContent = title;
+        const p = document.createElement('p');
+        p.textContent = body;
+        card.appendChild(t);
+        card.appendChild(p);
+        grid.appendChild(card);
+      });
+      evalScreen.appendChild(grid);
+    } else {
+      const pre = document.createElement('div');
+      pre.className = 'raw-fallback';
+      pre.textContent = rawText.replace('🎯 SİMÜLASYON TAMAMLANDI: YAPAY ZEKA SİZİ NASIL DENEYİMLİYOR?', '').trim();
+      evalScreen.appendChild(pre);
+    }
+
+    const restartBtn = document.createElement('button');
+    restartBtn.className = 'restart-btn';
+    restartBtn.textContent = 'Simülasyonu yeniden başlat';
+    restartBtn.addEventListener('click', () => location.reload());
+    evalScreen.appendChild(restartBtn);
+
+    evalScreen.style.display = 'flex';
+  }
+})();
+</script>
+</body>
+</html>
